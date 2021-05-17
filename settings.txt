@@ -1,0 +1,3 @@
+0
+1
+/home/ludovic/NIVA/uc1b_tier1_pixel_tools/data/T31TCJ_20170903_20191025_dates.txt
