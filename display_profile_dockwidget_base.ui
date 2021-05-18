@@ -6,87 +6,111 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>350</width>
-    <height>595</height>
+    <width>684</width>
+    <height>834</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Display Profile</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
-   <layout class="QGridLayout" name="gridLayout">
-    <property name="topMargin">
-     <number>9</number>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="contextMenuPolicy">
+    <enum>Qt::DefaultContextMenu</enum>
+   </property>
+   <widget class="QGraphicsView" name="graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>323</y>
+      <width>661</width>
+      <height>481</height>
+     </rect>
     </property>
-    <item row="13" column="4">
-     <widget class="QLabel" name="label_info">
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="6" column="4">
-     <widget class="QCheckBox" name="checkBox_zero">
-      <property name="text">
-       <string>Display zero reflectance days</string>
-      </property>
-     </widget>
-    </item>
-    <item row="5" column="4">
-     <widget class="QCheckBox" name="checkBox_invalid">
-      <property name="text">
-       <string>Display Invalid days</string>
-      </property>
-     </widget>
-    </item>
-    <item row="11" column="4">
-     <widget class="QLabel" name="label_pixel">
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="4">
-     <widget class="QComboBox" name="comboBox_N0"/>
-    </item>
-    <item row="1" column="4">
-     <widget class="QgsFileWidget" name="mQgsFileWidget"/>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_file">
-      <property name="text">
-       <string>Date File</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>shp year N-1</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="4">
-     <widget class="QComboBox" name="comboBox_N1"/>
-    </item>
-    <item row="9" column="4">
-     <widget class="QLabel" name="label_coordinates">
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="0">
-     <widget class="QLabel" name="label_2">
-      <property name="text">
-       <string>shp year N</string>
-      </property>
-     </widget>
-    </item>
-    <item row="10" column="3" colspan="2">
-     <widget class="QGraphicsView" name="graphicsView"/>
-    </item>
-   </layout>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="resizeAnchor">
+     <enum>QGraphicsView::AnchorViewCenter</enum>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="table">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>661</width>
+      <height>201</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <attribute name="horizontalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>9</y>
+      <width>661</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QComboBox" name="comboBox_N0"/>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboBox_N1"/>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboBox_raster">
+         <property name="toolTip">
+          <string>Cool</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QCheckBox" name="checkBox_zero">
+         <property name="text">
+          <string>Display zero reflectance days</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBox_invalid">
+         <property name="text">
+          <string>Display Invalid days</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QgsFileWidget" name="mQgsFileWidget"/>
+     </item>
+    </layout>
+   </widget>
   </widget>
  </widget>
  <customwidgets>

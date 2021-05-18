@@ -21,13 +21,16 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+
+#from qgis.utils import iface
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QObject,Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QGraphicsScene
+from qgis.PyQt.QtWidgets import QAction, QGraphicsScene, QTableWidgetItem
 from qgis.core import QgsProject
-from qgis.gui import QgsMapCanvas,QgsMapTool
+from qgis.gui import QgsMapCanvas,QgsMapTool,QgsMapToolEmitPoint
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+import numpy as np
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -36,6 +39,7 @@ from .resources import *
 from .display_profile_dockwidget import Display_ProfileDockWidget
 import os.path
 from math import floor
+
 
 class Display_Profile:
     """QGIS Plugin Implementation."""
@@ -219,16 +223,10 @@ class Display_Profile:
         with open("/home/ludovic/.local/share/QGIS/QGIS3/profiles/default/python/plugins/display_profile/settings.txt","w") as f:
              f.write(str(self.dockwidget.comboBox_N0.currentIndex())+"\n")
              f.write(str(self.dockwidget.comboBox_N1.currentIndex())+"\n")
+             f.write(str(self.dockwidget.comboBox_raster.currentIndex())+"\n")
              f.write(self.dockwidget.mQgsFileWidget.filePath())
 
-
-
-   
-    # slot called whenever mouse position changes 
-    def send_point_tool_coordinates(self,point):
-        # properties to map mouse position to row/col index of the raster in memory 
-        layer = self.iface.activeLayer() 
-        data_provider = layer.dataProvider()
+    def Coordinates(self,data_provider,point):
         extent = data_provider.extent() 
         width = data_provider.xSize() if data_provider.capabilities() & data_provider.Size else 1000 
         height = data_provider.ySize() if data_provider.capabilities() & data_provider.Size else 1000 
@@ -239,20 +237,94 @@ class Display_Profile:
             extent.yMinimum() <= point.y() <= extent.yMaximum():
             col = int(floor((point.x() - extent.xMinimum()) / xres))
             row = int(floor((extent.yMaximum() - point.y()) / yres))
+        else:
+            col = -1
+            row = -1
+       
+        X = point.x()
+        Y = point.y()
+
+        return X,Y,col,row
+
+
+    def get_bands(self,data_provider,point):
+        nband = data_provider.bandCount()
+        val = []
+        for i in range(nband):
+            v,res = data_provider.sample(point,i+1)
+            val.append(v)
+        val = np.array(val)
+        return nband,val
+
+
+    def clickedOnMap(self, point, button):
+
+        # Getting appropritate layers
+        self.layer = self.iface.activeLayer()
+        raster_name = self.dockwidget.comboBox_raster.currentText()
+        layer_raster  =  QgsProject.instance().mapLayersByName(raster_name)[0]
+
+        print("rastername",raster_name)
+        print("self.layer ",self.layer)
+        print("self.layer raster",layer_raster)
+
+        # Getting raster info
+        data_provider = self.layer.dataProvider()
+        data_provider_raster = layer_raster.dataProvider()
+
+        # Manage canvas coordinate
+        X1,Y1,col1,row1 = self.Coordinates(data_provider,point)
+        X2,Y2,col2,row2 = self.Coordinates(data_provider_raster,point)
+ 
+        #print("DEBUG1: [%d = %d,%d = %d]\n"%(X1,row1,Y1,col1))
+        #print("DEBUG2: [%d = %d,%d = %d]\n"%(X2,row2,Y2,col2))
+
+        # Getting pixel dat
+        nband, profile = self.get_bands(data_provider,point)
+        nband_raster, profile_raster = self.get_bands(data_provider_raster,point)
     
-            # output row and column index to console
-            print(row, col)
+        # Specific management
+        profile = profile/1000.0
+        valid = np.greater(profile,0.0)
+        tidx = np.arange(nband)
 
+        print(profile)
+        print(profile_raster)
+        print(self.dockwidget.comboBox_raster.currentIndex())
+  
+        # Plot
+        self.plots[0].set_xdata(tidx[valid])
+        self.plots[0].set_ydata(profile[valid])
+        plt.xlim([0,nband])
+        plt.ylim([0,1])
+        self.figure.canvas.draw()
 
+        # Table
+        self.dockwidget.table.setRowCount(nband_raster)
+        self.dockwidget.table.setColumnCount(1)
+        self.dockwidget.table.setHorizontalHeaderLabels([u'Value'])
+        row_name = [data_provider_raster.generateBandName(i+1) for i in range(nband_raster)]
+        print(row_name)
+        for i in range (self.dockwidget.table.rowCount()):
+            #insert the data in the table
+            label = QTableWidgetItem()
+            label.setText(str(profile_raster[i]))
+            label.setTextAlignment(Qt.AlignCenter)
+            self.dockwidget.table.setItem(i,0,label)
+
+        self.dockwidget.table.setVerticalHeaderLabels(row_name)
+   
     def initialization(self):
         # Get settings file parameter
         l0 = 0
         l1 = 1
+        l2 = 2
         datefile = ""
         with open("/home/ludovic/.local/share/QGIS/QGIS3/profiles/default/python/plugins/display_profile/settings.txt","r") as f:
             try:
                 l0 = int(f.readline())
                 l1 = int(f.readline())
+                l2 = int(f.readline())
                 datefile = f.readline()
             except:
                 pass
@@ -261,54 +333,49 @@ class Display_Profile:
         self.layers = QgsProject.instance().layerTreeRoot().children()
         self.dockwidget.comboBox_N0.clear()
         self.dockwidget.comboBox_N1.clear()
+        self.dockwidget.comboBox_raster.clear()
+
         self.dockwidget.comboBox_N0.addItems([layer.name() for layer in self.layers])
         self.dockwidget.comboBox_N1.addItems([layer.name() for layer in self.layers])
+        self.dockwidget.comboBox_raster.addItems([layer.name() for layer in self.layers])
 
         # Initialize parameter widgets
         self.dockwidget.comboBox_N0.setCurrentIndex(l0)
         self.dockwidget.comboBox_N1.setCurrentIndex(l1)
+        self.dockwidget.comboBox_raster.setCurrentIndex(l2)
         self.dockwidget.mQgsFileWidget.setFilePath(datefile)
 
         # Add signal handle to parameter widgets
         self.dockwidget.comboBox_N0.currentIndexChanged.connect(self.comboBox_change)
         self.dockwidget.comboBox_N1.currentIndexChanged.connect(self.comboBox_change)
+        self.dockwidget.comboBox_raster.currentIndexChanged.connect(self.comboBox_change)
         self.dockwidget.mQgsFileWidget.fileChanged.connect(self.saveSettings)
 
         # Init plot area
-        figure = plt.figure(figsize = (6.6,4.95))
-        plot_color = ['r','b','g']
+        self.figure = plt.figure(figsize = (6,4))
+        self.plot_color = ['g']
         self.plots = []
-        for i,c in enumerate(plot_color):
-            p = plt.plot([0,1],[0,i], color = c)
+        for i,c in enumerate(self.plot_color):
+            p, = plt.plot([0,0],[0,0], color = c) # NOTE: becarefull with the syntax. there is a comma.
             self.plots.append(p)
 
-        plt.ylim([0,1])  
+        #plt.ylim([0,1])  
         plt.xlabel("DoY")  
         plt.ylabel("NDVI")  
 
         self.scene = QGraphicsScene(self.dockwidget) 
-        window = FigureCanvas(figure)
+        window = FigureCanvas(self.figure)
         self.scene.addWidget(window)
         self.dockwidget.graphicsView.setScene(self.scene)
         self.dockwidget.show()    
 
-        # Init canvas management
-        self.canvas = self.iface.mapCanvas()
-        self.layer = self.iface.activeLayer()
-        QgsMapTool.__init__(self, canvas)
-        self.setCursor(Qt.CrossCursor)
-        self.canvas.setMapTool(send_point_tool_coordinates)
-
-
+  
     def comboBox_change(self):
         # Update comboBox and save value
         combo = self.dockwidget.sender()
         selectedLayerIndex = combo.currentIndex()
         selectedLayer = self.layers[selectedLayerIndex].name()
         self.saveSettings()
-
-
-
 
     def run(self):
         """Run method that loads and starts the plugin"""
@@ -334,6 +401,12 @@ class Display_Profile:
             self.dockwidget.show()
 
             self.initialization()
+            self.canvas = self.iface.mapCanvas()
+            self.emitPoint = QgsMapToolEmitPoint(self.canvas)
+            self.canvas.setMapTool(self.emitPoint)
+            self.emitPoint.canvasClicked.connect(self.clickedOnMap)
 
+            
+            print("DONE555")
 
 
